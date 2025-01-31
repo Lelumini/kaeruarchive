@@ -30,7 +30,6 @@
 </head>
 <body>
     <h1>Miitomo (Kaeru) Archive</h1>
-    <h5>This website shows miis as they were 31.1.2025 in style central.</h5>
     <input type="text" id="searchBox" placeholder="Search" oninput="filterResults()">
     <div id="result"></div>
     <div class="pagination">
@@ -44,7 +43,7 @@
         let currentPage = 1;
         const itemsPerPage = 18;
     
-        const zipFileUrl = 'dump.zip';
+        const zipFileUrl = 'https://drive.usercontent.google.com/u/2/uc?id=1FUj0q95pbTFnhDkYU8JzD7V5Hm3HLtOG&export=download';
     
         window.onload = loadZipFileFromServer;
     
@@ -74,7 +73,7 @@
                     const jsonData = JSON.parse(fileContent);
                     const nameExtension = jsonData.own_mii?.nameExtension || "Unknown";
                     const namePronounce = jsonData.own_mii?.namePronounce || "Unknown";
-                    const imageUrl = `https://tomop.kaeru.world/miiface/${fileName.replace('.json', '.png')}`;
+                    const imageUrl = `https://tomop.kaeru.world/miiface/${fileName}`;
     
                     extractedData.push({
                         name: (nameExtension + " " + namePronounce).toLowerCase(),
