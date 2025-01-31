@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MKDV</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        #result {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            font-family: 'ntndsymbol', sans-serif;
+        }
+        .image-container {
+            text-align: center;
+        }
+        .image-container img {
+            width: 100%;
+            height: auto;
+        }
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            margin: 0 5px;
+        }
+        @font-face {
+            font-family: 'ntndsymbol';
+            src: url('https://cors-anywhere.herokuapp.com/https://github.com/ArchiveWebserver/mtmo/raw/main/nintendo_NTLG-DB_002.ttf') format('truetype');
+        }
+    </style>
+</head>
+<body>
+    <h1>Miitomo (Kaeru) Archive</h1>
+    <h5>This website shows miis as they were 31.1.2025 in style central.</h5>
+    <input type="text" id="searchBox" placeholder="Search" oninput="filterResults()">
+    <div id="result"></div>
+    <div class="pagination">
+        <button id="prevPageBtn" onclick="changePage(-1)" disabled>Previous</button>
+        <span id="pageNumber">Page 1</span>
+        <button id="nextPageBtn" onclick="changePage(1)" disabled>Next</button>
+    </div>
+
+    <script>
+        let extractedData = [];
+        let currentPage = 1;
+        const itemsPerPage = 18;
+    
+        const zipFileUrl = 'dump.zip';
+    
+        window.onload = loadZipFileFromServer;
+    
+        async function loadZipFileFromServer() {
+            try {
+                const response = await fetch(zipFileUrl);
+                if (!response.ok) throw new Error("Failed to fetch ZIP file");
+                
+                const data = await response.arrayBuffer();
+                await processZipData(data);
+            } catch (error) {
+                alert('Error loading ZIP file: ' + error.message);
+            }
+        }
+    
+        async function processZipData(data) {
+            const zip = await JSZip.loadAsync(data);
+            extractedData = [];
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            
+            const jsonFiles = Object.keys(zip.files).filter(name => name.endsWith('.json'));
+    
+            for (const fileName of jsonFiles) {
+                const fileContent = await zip.files[fileName].async("string");
+                try {
+                    const jsonData = JSON.parse(fileContent);
+                    const nameExtension = jsonData.own_mii?.nameExtension || "Unknown";
+                    const namePronounce = jsonData.own_mii?.namePronounce || "Unknown";
+                    const imageUrl = `https://tomop.kaeru.world/miiface/${fileName.replace('.json', '.png')}`;
+    
+                    extractedData.push({
+                        name: (nameExtension + " " + namePronounce).toLowerCase(),
+                        imageUrl,
+                        displayName: `📝${nameExtension}<br>🗣${namePronounce}`
+                    });
+                } catch (jsonError) {
+                    console.warn('Invalid JSON in file:', fileName);
+                }
+            }
+            displayResults();
+        }
+    
+        function filterResults() {
+            const filter = document.getElementById('searchBox').value;
+            displayResults(filter);
+        }
+    
+        function displayResults(filter = "") {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+    
+            const filteredData = extractedData.filter(item => item.name.includes(filter.toLowerCase()));
+    
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    
+            if (currentPage > totalPages) currentPage = totalPages;
+    
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+    
+            pageData.forEach((item) => {
+                const container = document.createElement('div');
+                container.classList.add('image-container');
+                
+                const imgElement = document.createElement('img');
+                imgElement.src = item.imageUrl;
+                imgElement.onload = () => {
+                    imgElement.style.display = 'block';
+                };
+    
+                container.appendChild(imgElement);
+    
+                const label = document.createElement('p');
+                label.innerHTML = item.displayName;
+                container.appendChild(label);
+    
+                resultDiv.appendChild(container);
+            });
+    
+            document.getElementById('pageNumber').textContent = `Page ${currentPage}`;
+            document.getElementById('prevPageBtn').disabled = currentPage === 1;
+            document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+        }
+    
+        function changePage(direction) {
+            currentPage += direction;
+            displayResults(document.getElementById('searchBox').value);
+        }
+    </script>    
+</body>
+</html>
